@@ -1,0 +1,9 @@
+*.pyc
+*.pyo
+/.coverage
+/doc
+/dist
+/build
+/MANIFEST
+/gtexttospeech.egg-info
+/tmp/
