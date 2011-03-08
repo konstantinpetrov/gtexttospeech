@@ -79,11 +79,13 @@ class TextToSpeech(object):
 
     def split_by_len(self, text, length=95):
         """Splits files by sentences with maximum length=length."""
+        SEP = ' '
+        text = text.replace('\n', SEP)
         for r in self.replacers:
             text = text.replace(r[0], r[1])
         if len(text) < length:
             return [text]
-        SEP = ' '
+        
         sentences = []
         t = text.split(SEP)
 

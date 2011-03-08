@@ -14,7 +14,7 @@ def read(fname):
 
 setup(
     name="gtexttospeech",
-    version="0.1.2",
+    version="0.1.3",
     packages=['gtexttospeech'],
     package_data={
         '': ['*.txt', '*.rst', '*.md']
