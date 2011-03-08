@@ -14,7 +14,7 @@ def read(fname):
 
 setup(
     name="gtexttospeech",
-    version="0.1.3",
+    version="0.1.4",
     packages=['gtexttospeech'],
     package_data={
         '': ['*.txt', '*.rst', '*.md']
@@ -29,7 +29,7 @@ setup(
     url="http://pbagwl.com/projects/gtexttospeech",
     license="MIT",
 
-    long_description=read('readme.md'),
+    long_description=read('README'),
     include_package_data=True,
     zip_safe=False,
     classifiers=[
