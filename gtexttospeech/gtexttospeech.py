@@ -85,7 +85,7 @@ class TextToSpeech(object):
             text = text.replace(r[0], r[1])
         if len(text) < length:
             return [text]
-        
+
         sentences = []
         t = text.split(SEP)
 
@@ -94,7 +94,7 @@ class TextToSpeech(object):
             joined = SEP.join(args)
             for i in args:
                 if len(i) > length:
-                    t = u'Length of word {0} is too big'
+                    t = u'Word "{0}" is too long'
                     raise TextToSpeechError(t.format(i))
             if len(joined) < length:
                 return joined
