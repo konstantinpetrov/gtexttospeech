@@ -104,7 +104,7 @@ class TextToSpeech(object):
         while self.files:
             path, fd = self.files.pop(0)
             if not first:  # MP3 header
-                fd.seek(32, io.SEEK_CUR)
+                fd.seek(32, 1)
             copyfileobj(fd, to)
             os.unlink(path)
             first = False
