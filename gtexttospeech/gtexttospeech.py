@@ -7,19 +7,20 @@ Created by Paul Bagwell on 2011-03-08.
 Copyright (c) 2011 Paul Bagwell. All rights reserved.
 """
 
+import collections
+import io
 import os
+import sys
+import textwrap
 import urllib2
-import unittest
 from codecs import open as uopen
 from cookielib import CookieJar
-from glob import glob
-from math import ceil
 from shutil import copyfileobj
-from tempfile import NamedTemporaryFile
-from urllib import urlencode
+from tempfile import mkstemp
+from urllib import pathname2url
 
 
-__all__ = ['TextToSpeechError', 'TextToSpeech']
+__all__ = ['TextToSpeech', 'TextToSpeechError']
 
 
 class TextToSpeechError(Exception):
@@ -27,113 +28,89 @@ class TextToSpeechError(Exception):
 
 
 class TextToSpeech(object):
-    replacers = (  # list of replacers
+    substitutions = (  # list of substitutions
         (u'ё', u'йо'),
         (u'трех', u'трьох'),
         (u'хабрахабр', u'хабрах+абр'),
     )
+    headers = (
+        ('Host', 'translate.google.com'),
+        ('User-Agent', ('Mozilla/5.0 (Windows; U; Windows NT 6.1;'
+            ' en-US; rv:2.0.0) Gecko/20110320 Firefox/4.0.0')),
+        ('Accept', 'text/html,application/xhtml+xml,'
+            'application/xml;q=0.9,*/*;q=0.8'),
+        ('Accept-Language', 'en-us,en;q=0.5'),
+        ('Accept-Encoding', 'gzip,deflate'),
+        ('Accept-Charset', 'utf-8;q=0.7,*;q=0.7'),
+    )
 
-    def __init__(self, text_or_file, replacers=None, language='ru'):
-        if isinstance(text_or_file, file):
-            with uopen(text_or_file.name, encoding='utf-8') as f:
-                text = f.read()
-            text_or_file.close()  # close non-unicode file
-        else:
-            text = text_or_file
-        self.sentences = self.split_by_len(text)
-        self.language = language
-        if replacers and isinstance(replacers, (list, tuple)):
-            self.replacers = replacers
-        self.tmp = []  # list of temporary downloaded mp3s
-        self.updated_url_openers = False
-
-    def update_url_openers(self):
-        """Updates urlopeners with various required by google headers."""
-        headers = (
-            ('Host', 'translate.google.com'),
-            ('User-Agent', ('Mozilla/5.0 (Windows; U; Windows NT 6.1;'
-                ' en-US; rv:2.0.0) Gecko/20110320 Firefox/4.0.0')),
-            ('Accept', 'text/html,application/xhtml+xml,'
-                'application/xml;q=0.9,*/*;q=0.8'),
-            ('Accept-Language', 'en-us,en;q=0.5'),
-            ('Accept-Encoding', 'gzip,deflate'),
-            ('Accept-Charset', 'utf-8;q=0.7,*;q=0.7'),
-            ('Keep-Alive', '115'),
-            ('Connection', 'keep-alive'),
+    def __init__(self, *inputs, **kwargs):
+        self.language = kwargs.get('language', 'ru')
+        if isinstance(kwargs.get('substitutions'), collections.Iterable):
+            self.substitutions = substitutions
+        buf = ''.join(
+            stream.read() if isinstance(stream, file) else str(stream)
+            for stream in inputs
         )
 
-        jar = CookieJar()
-        handler = urllib2.HTTPCookieProcessor(jar)
-        opener = urllib2.build_opener(handler)
-        opener.addheaders = headers
-        urllib2.install_opener(opener)
-        self.updated_url_openers = True
+        self.buffer = self.split(buf.decode('utf-8'))
+        self.opener = self.make_opener()
+        self.files = []
 
-    def make_url(self, text):
+    def make_opener(self):
+        handler = urllib2.HTTPCookieProcessor(CookieJar())
+        opener = urllib2.build_opener(handler)
+        opener.addheaders = self.headers
+        return opener
+
+    def urls(self):
         """Generates url to Google Translate MP3 file."""
         tpl = u'http://translate.google.com/translate_tts?q=[{0}]&tl={1}'
-        return tpl.format(
-            urlencode({'': text.encode('utf-8')}).strip('=').strip('\n'),
-            self.language
-        )
+        for line in self.buffer:
+            yield tpl.format(pathname2url(line.encode('utf-8')), self.language)
 
-    def split_by_len(self, text, length=95):
+    def split(self, buf, length=95):
         """Splits files by sentences with maximum length=length."""
-        SEP = ' '
-        text = text.replace('\n', SEP)
-        for r in self.replacers:
-            text = text.replace(r[0], r[1])
-        if len(text) < length:
-            return [text]
+        for fr, to in self.substitutions:
+            buf = buf.replace(fr, to)
+        return textwrap.wrap(buf, length, break_long_words=True)
 
-        sentences = []
-        t = text.split(SEP)
-
-        def make_list(x, y):
-            args = [x, y]
-            joined = SEP.join(args)
-            for i in args:
-                if len(i) > length:
-                    t = u'Word "{0}" is too long'
-                    raise TextToSpeechError(t.format(i))
-            if len(joined) < length:
-                return joined
-            sentences.append(x)
-            return y
-        last_sentence = reduce(make_list, t)
-        sentences.append(last_sentence)
-        return sentences
-
-    def download_voices(self, sentences):
+    def download_voices(self):
         """Downloads MP3s."""
-        if not self.updated_url_openers:
-            self.update_url_openers()
-        for line in sentences:
-            mp3 = NamedTemporaryFile(suffix='.mp3', delete=False)
-            url = self.make_url(line)
-            content = urllib2.urlopen(url.encode('utf-8')).read()
-            mp3.write(content)
-            mp3.close()
-            self.tmp.append(open(mp3.name, 'rb'))
+        for url in self.urls():
+            # print url
+            fd, path = mkstemp('.mp3')
+            fd = os.fdopen(fd, 'wb+')
+            try:
+                page = self.opener.open(url)
+            except urllib2.HTTPError:
+                raise TextToSpeechError('Google blocked your computer. '
+                    'To unblock it, follow this link: {0}'.format(u.url))
+            copyfileobj(page, fd)
+            fd.seek(0)
+            self.files.append((path, fd))
 
     def delete_voices(self):
         """Deletes all downloaded files."""
-        for f in self.tmp:
-            f.close()
-            os.unlink(f.name)
-        self.tmp = []
+        while self.files:
+            path = self.files.pop()[0]
+            os.unlink(path)
 
-    def join_voices(self, result_file):
+    def join_voices(self, to):
         """Copies audiodata from all downloaded MP3s to result_file."""
-        for f in self.tmp:
-            copyfileobj(f, result_file)
+        first = True
+        if not isinstance(to, file):
+            to = open(to, 'wb')
+        while self.files:
+            path, fd = self.files.pop(0)
+            if not first:  # MP3 header
+                fd.seek(32, io.SEEK_CUR)
+            copyfileobj(fd, to)
+            os.unlink(path)
+            first = False
+        return to
 
-    def create(self, result_file, delete_tmp_files=True):
+    def create(self, result):
         """Downloads all voices and copies them to result_file."""
-        if not self.tmp:
-            self.download_voices(self.sentences)
-        if not isinstance(result_file, file):
-            result_file = open(result_file, 'wb+')
-        self.join_voices(result_file)
-        if delete_tmp_files:
-            self.delete_voices()
+        self.download_voices()
+        return self.join_voices(result)

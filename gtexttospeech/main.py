@@ -29,26 +29,11 @@ def main():
                       action='store_true', dest='verbose', default=False,
                       help='be verbose')
     (options, args) = parser.parse_args()
-    #print options.text
-    if options.filename or options.text:
-        kw = {'language': options.language}
-        if options.filename:
-            kw['text_or_file'] = open(options.filename)
-            TextToSpeech(**kw).create(options.outfile)
-        elif options.text:
-            kw['text_or_file'] = options.text.decode('utf-8')
-            TextToSpeech(**kw).create(options.outfile)
-    elif len(args) >= 1:
-        out = sys.stdout
-        if len(args) >= 2:
-            out = args[1]
-        TextToSpeech(args[0].decode('utf-8')).create(out)
+    if sys.stdin:
+        lang = args[0] if args else 'ru'
+        TextToSpeech(sys.stdin, language=lang).create(sys.stdout)
     else:
-        s = sys.stdin.read().decode('utf-8')
-        if not s:
-            parser.print_help()
-        else:
-            TextToSpeech(s).create(sys.stdout)
+        parser.print_help()
     return 0
 
 if __name__ == "__main__":

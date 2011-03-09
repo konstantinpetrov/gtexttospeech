@@ -14,15 +14,7 @@ def read(fname):
 
 setup(
     name="gtexttospeech",
-    version="0.1.4",
-    packages=['gtexttospeech'],
-    package_data={
-        '': ['*.txt', '*.rst', '*.md']
-    },
-    data_files=[
-        ('', ['LICENSE'])
-    ],
-
+    version="0.1.5",
     author="Paul Bagwell",
     author_email="pbagwl@gmail.com",
     description="Converts text to speech using google translate",
@@ -30,19 +22,19 @@ setup(
     license="MIT",
 
     long_description=read('README'),
-    include_package_data=True,
     zip_safe=False,
+    packages=['gtexttospeech'],
+    package_data={'': ['*.txt', '*.rst', '*.md']},
+    data_files=[('', ['LICENSE'])],
     classifiers=[
         "Development Status :: 4 - Beta",
-        "Topic :: Utilities",
+        "Topic :: Multimedia :: Sound/Audio :: Speech",
         "License :: OSI Approved :: MIT License",
+        "Programming Language :: Python :: 2.6",
+        "Programming Language :: Python :: 2.7",
     ],
-    install_requires=[
-        'setuptools',
-    ],
+    install_requires=['setuptools'],
     entry_points={
-        'console_scripts': [
-            'gtts = gtexttospeech.main:main',
-        ],
+        'console_scripts': ['gtts = gtexttospeech.main:main'],
     },
 )
