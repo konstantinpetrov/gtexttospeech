@@ -85,7 +85,7 @@ class TextToSpeech(object):
                 page = self.opener.open(url)
             except urllib2.HTTPError:
                 raise TextToSpeechError('Google blocked your computer. '
-                    'To unblock it, follow this link: {0}'.format(u.url))
+                    'To unblock it, follow this link: {0}'.format(page.url))
             copyfileobj(page, fd)
             fd.seek(0)
             self.files.append((path, fd))
