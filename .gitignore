@@ -7,3 +7,5 @@
 /MANIFEST
 /gtexttospeech.egg-info
 /tmp/
+
+.DS_Store
