@@ -1,12 +1,5 @@
 #!/usr/bin/env python
 # encoding: utf-8
-"""
-gtexttospeech.py
-
-Created by Paul Bagwell on 2011-03-08.
-Copyright (c) 2011 Paul Bagwell. All rights reserved.
-"""
-
 import collections
 import io
 import os

@@ -14,11 +14,11 @@ def read(fname):
 
 setup(
     name="gtexttospeech",
-    version="0.1.8",
-    author="Paul Bagwell",
-    author_email="pbagwl@gmail.com",
+    version="0.1.9",
+    author="Paul Miller",
+    author_email="paulmillr@me.com",
     description="Converts text to speech using google translate",
-    url="http://pbagwl.com/projects/gtexttospeech",
+    url="http://github.com/paulmillr/gtexttospeech",
     license="MIT",
 
     long_description=read('README.rst'),

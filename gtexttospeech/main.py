@@ -1,9 +1,5 @@
 #!/usr/bin/env python
-
 """
-Created by Paul Bagwell on 2011-03-08.
-Copyright (c) 2011 Paul Bagwell. All rights reserved.
-
 This module is used when gtexttospeech is run
 as a standalone application.
 """
